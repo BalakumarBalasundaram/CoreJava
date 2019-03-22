@@ -1,0 +1,39 @@
+Functional interface - contains only one methods; can have default methods or static methods implementation; 
+
+public Interface HdfsSupplier<T> {
+    T get(Filesystem fs) throws IOException; 
+}
+
+public void execute(HdfsSupplier<T> supplier) { 
+ try {
+   return supplier.get(filesystem); 
+ } catch (final IOException e) {
+   throw new IoException(e); 
+ }
+}
+
+
+execute(fs -> fs.isDirectory(path));
+execute(fs -> fs.exists(fileName));
+execute(fs -> fs.open(new Path(fileName)));
+execute(fs -> fs.getFileStatus(fileName).getLen());
+execute(fs -> {
+      fs.mkdirs(new Path(dir));
+      return null;
+    });
+execute(fs -> {
+      final PathFilter pathFilter = path -> path.getName().startsWith(fileName);
+      final FileStatus[] list = fs.listStatus(new Path(base), pathFilter);
+      final Function<FileStatus, String> removePrefix = fileStatus -> fileStatus.getPath().getName().substring(fileName.length());
+      final int max = Arrays.stream(list).map(removePrefix).filter(Hdfs::isInt).mapToInt(Integer::parseInt).max().orElse(0);
+      return base + "/" + fileName + (max + 1);
+    });
+execute(fs -> {
+      final boolean moved = fs.rename(sourceFile, targetFile);
+      if (!moved) {
+        throw new IOException("Could not move file from " + sourceFile + " to " + targetFile);
+      }
+      return null;
+    });
+    
+    
